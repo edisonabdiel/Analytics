@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trade Republic Analysis Tool
+
+A modern web application built with Next.js and TypeScript for analyzing Trade Republic customer service data. The application processes and analyzes CSV files containing customer data, tickets, and complaints to generate insights about customer service performance.
+
+🚀 [Live Demo](https://analytics-teal.vercel.app/)
+
+## Features
+
+- 📊 Real-time data analysis
+- 🎯 Interactive file upload interface
+- 💻 Terminal-like logging system
+- 📈 Beautiful results visualization
+- 🌙 Dark mode support
+- 🎨 Modern UI with Tailwind CSS
+- ⚡ Fast and responsive
+
+## Tech Stack
+
+- Next.js 15.1.6
+- TypeScript
+- Tailwind CSS
+- Papa Parse (CSV parsing)
+- Lodash
+- Radix UI Components
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18 or higher
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/your-username/trade-republic-analysis.git
+cd trade-republic-analysis
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Run the development server:
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Upload your CSV files:
+   - Personal data file (containing customer information)
+   - Tickets data file (containing support ticket information)
+   - Complaints data file (containing customer complaints)
 
-## Learn More
+2. Click "Run Analysis" to process the data
 
-To learn more about Next.js, take a look at the following resources:
+3. Watch the analysis progress in the terminal display
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. View the results in the beautiful results dashboard
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## CSV File Requirements
 
-## Deploy on Vercel
+### Personal Data CSV
+- Required columns:
+  - `AUTH_ACCOUNT_ID`: Unique identifier for each customer
+  - `JURISDICTION`: Customer's jurisdiction (e.g., 'DE', 'FR')
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Tickets Data CSV
+- Required columns:
+  - `AUTH_ACCOUNT_ID`: Customer identifier
+  - `CREATED_AT`: Ticket creation timestamp
+  - `SOLVED_AT`: Ticket resolution timestamp
+  - `STATUS`: Ticket status
+  - `CONTACT_REASON_VALUE`: Reason for contact
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Complaints Data CSV
+- Required columns:
+  - `AUTH_ACCOUNT_ID`: Customer identifier
+  - `CREATED_AT`: Complaint creation timestamp
+  - `SOLVED_AT`: Complaint resolution timestamp
+
+## Analysis Metrics
+
+The tool analyzes three key metrics:
+1. Average Time to Solution (TTS) for German customers in August
+2. Percentage of interest-related complaints resolved within SLA
+3. Number of French customers with transfer-related complaints
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Deployment
+
+The application is deployed on Vercel and can be accessed at [https://analytics-teal.vercel.app/](https://analytics-teal.vercel.app/)
