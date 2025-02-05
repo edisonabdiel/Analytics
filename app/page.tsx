@@ -148,21 +148,21 @@ const TradeRepublicAnalysis: React.FC = () => {
       if (!files.personal) {
         throw new Error('Personal data file is required');
       }
-      const personal = await parseFile<PersonalData>(files.personal);
+      const personal = await parseFile<PersonalData>(files.personal as File);
       await addLog(`✓ Successfully parsed ${personal.data.length.toLocaleString()} personal records`, 500);
 
       await addLog('📥 Reading tickets data file...', 800);
       if (!files.tickets) {
         throw new Error('Tickets data file is required');
       }
-      const tickets = await parseFile<TicketData>(files.tickets);
+      const tickets = await parseFile<TicketData>(files.tickets as File);
       await addLog(`✓ Successfully parsed ${tickets.data.length.toLocaleString()} ticket records`, 500);
 
       await addLog('📥 Reading complaints data file...', 800);
       if (!files.complaints) {
         throw new Error('Complaints data file is required');
       }
-      const complaints = await parseFile<ComplaintData>(files.complaints);
+      const complaints = await parseFile<ComplaintData>(files.complaints as File);
       await addLog(`✓ Successfully parsed ${complaints.data.length.toLocaleString()} complaint records`, 500);
 
       await addLog('🔍 Beginning data analysis phase...', 1000);
