@@ -29,21 +29,24 @@ interface Results {
   q3: AnalysisResult;
 }
 
-interface PersonalData {
+// Define a base type for parsed data
+interface BaseData {
   AUTH_ACCOUNT_ID: string;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+interface PersonalData extends BaseData {
   JURISDICTION: string;
 }
 
-interface TicketData {
-  AUTH_ACCOUNT_ID: string;
+interface TicketData extends BaseData {
   CREATED_AT: string;
   SOLVED_AT: string;
   STATUS: string;
   CONTACT_REASON_VALUE: string;
 }
 
-interface ComplaintData {
-  AUTH_ACCOUNT_ID: string;
+interface ComplaintData extends BaseData {
   CREATED_AT: string;
   SOLVED_AT: string;
 }
@@ -122,7 +125,7 @@ const TradeRepublicAnalysis: React.FC = () => {
     return (solved - created) / (1000 * 60 * 60 * 24);
   };
 
-  const parseFile = async <T extends Record<string, any>>(file: File): Promise<ParseResult<T>> => {
+  const parseFile = async <T extends BaseData>(file: File): Promise<ParseResult<T>> => {
     return new Promise((resolve) => {
       Papa.parse(file, {
         header: true,
