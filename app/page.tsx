@@ -5,18 +5,42 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Papa from 'papaparse';
 import _ from 'lodash';
 
+interface Log {
+  timestamp: string;
+  message: string;
+  type: 'error' | 'success' | 'info';
+}
+
+interface FileState {
+  personal: File | null;
+  tickets: File | null;
+  complaints: File | null;
+}
+
+interface AnalysisResult {
+  value: number;
+  answer: string;
+  explanation: string;
+}
+
+interface Results {
+  q1: AnalysisResult;
+  q2: AnalysisResult;
+  q3: AnalysisResult;
+}
+
 const TradeRepublicAnalysis = () => {
-  const [logs, setLogs] = useState([]);
-  const [results, setResults] = useState(null);
-  const [files, setFiles] = useState({
+  const [logs, setLogs] = useState<Log[]>([]);
+  const [results, setResults] = useState<Results | null>(null);
+  const [files, setFiles] = useState<FileState>({
     personal: null,
     tickets: null,
     complaints: null
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [displayedLogs, setDisplayedLogs] = useState([]);
+  const [displayedLogs, setDisplayedLogs] = useState<Log[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const logEndRef = useRef(null);
+  const logEndRef = useRef<HTMLDivElement>(null);
 
   // Simulate terminal typing effect
   useEffect(() => {
@@ -46,7 +70,7 @@ const TradeRepublicAnalysis = () => {
     }
   }, [isAnalyzing]);
 
-  const addLog = async (message, delay = 0) => {
+  const addLog = async (message: string, delay = 0) => {
     if (delay) {
       await new Promise(resolve => setTimeout(resolve, delay));
     }
@@ -60,16 +84,18 @@ const TradeRepublicAnalysis = () => {
     }]);
   };
 
-  const handleFileUpload = (event, fileType) => {
-    const file = event.target.files[0];
-    setFiles(prev => ({ ...prev, [fileType]: file }));
-    addLog(`📁 Uploaded ${fileType} data file: ${file.name}`);
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, fileType: keyof FileState) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFiles(prev => ({ ...prev, [fileType]: file }));
+      addLog(`📁 Uploaded ${fileType} data file: ${file.name}`);
+    }
   };
 
-  const calculateTTS = (createdAt, solvedAt) => {
+  const calculateTTS = (createdAt: string, solvedAt: string): number | null => {
     if (!createdAt || !solvedAt) return null;
-    const created = new Date(createdAt);
-    const solved = new Date(solvedAt);
+    const created = new Date(createdAt).getTime();
+    const solved = new Date(solvedAt).getTime();
     return (solved - created) / (1000 * 60 * 60 * 24);
   };
 
@@ -83,7 +109,7 @@ const TradeRepublicAnalysis = () => {
       await addLog('🚀 Initializing Trade Republic data analysis...', 500);
       await addLog('⚙️  Setting up analysis environment...', 800);
       
-      const parseFile = (file) => new Promise((resolve) => {
+      const parseFile = (file: File) => new Promise((resolve) => {
         Papa.parse(file, {
           header: true,
           dynamicTyping: true,
@@ -236,7 +262,7 @@ const TradeRepublicAnalysis = () => {
                       <input
                         type="file"
                         accept=".csv"
-                        onChange={(e) => handleFileUpload(e, type)}
+                        onChange={(e) => handleFileUpload(e, type as keyof FileState)}
                         className="block w-full text-sm file:mr-4 file:py-2 file:px-4 
                           file:rounded-lg file:border-0 file:font-medium
                           file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100
