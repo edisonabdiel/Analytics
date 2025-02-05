@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import Papa from 'papaparse';
+import Papa, { ParseResult as PapaParseResult } from 'papaparse';
 import _ from 'lodash';
 
 interface Log {
@@ -29,7 +29,28 @@ interface Results {
   q3: AnalysisResult;
 }
 
-const TradeRepublicAnalysis = () => {
+interface PersonalData {
+  AUTH_ACCOUNT_ID: string;
+  JURISDICTION: string;
+}
+
+interface TicketData {
+  AUTH_ACCOUNT_ID: string;
+  CREATED_AT: string;
+  SOLVED_AT: string;
+  STATUS: string;
+  CONTACT_REASON_VALUE: string;
+}
+
+interface ComplaintData {
+  AUTH_ACCOUNT_ID: string;
+  CREATED_AT: string;
+  SOLVED_AT: string;
+}
+
+type ParseResult<T> = PapaParseResult<T>;
+
+const TradeRepublicAnalysis: React.FC = () => {
   const [logs, setLogs] = useState<Log[]>([]);
   const [results, setResults] = useState<Results | null>(null);
   const [files, setFiles] = useState<FileState>({
@@ -47,13 +68,12 @@ const TradeRepublicAnalysis = () => {
     if (logs.length > displayedLogs.length) {
       const timer = setTimeout(() => {
         setDisplayedLogs(prev => [...prev, logs[prev.length]]);
-      }, Math.random() * 300 + 200); // Random delay between 200-500ms
+      }, Math.random() * 300 + 200);
       return () => clearTimeout(timer);
     } else if (logs.length > 0 && logs.length === displayedLogs.length) {
-      // Show results after the last log is displayed
       const timer = setTimeout(() => {
         setShowResults(true);
-      }, 500); // Add a small delay after the last log
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [logs, displayedLogs]);
@@ -72,7 +92,7 @@ const TradeRepublicAnalysis = () => {
 
   const addLog = async (message: string, delay = 0) => {
     if (delay) {
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise<void>(resolve => setTimeout(resolve, delay));
     }
     const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
     setLogs(prev => [...prev, {
@@ -99,6 +119,17 @@ const TradeRepublicAnalysis = () => {
     return (solved - created) / (1000 * 60 * 60 * 24);
   };
 
+  const parseFile = async <T extends Record<string, any>>(file: File): Promise<ParseResult<T>> => {
+    return new Promise((resolve) => {
+      Papa.parse(file, {
+        header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+        complete: (results) => resolve(results as ParseResult<T>)
+      });
+    });
+  };
+
   const analyzeData = async () => {
     setIsAnalyzing(true);
     setResults(null);
@@ -109,26 +140,23 @@ const TradeRepublicAnalysis = () => {
       await addLog('🚀 Initializing Trade Republic data analysis...', 500);
       await addLog('⚙️  Setting up analysis environment...', 800);
       
-      const parseFile = (file: File) => new Promise((resolve) => {
-        Papa.parse(file, {
-          header: true,
-          dynamicTyping: true,
-          skipEmptyLines: true,
-          complete: (results) => resolve(results)
-        });
-      });
-
       await addLog('📊 Starting data ingestion phase...', 1000);
+
+      // Check if all files exist
+      if (!files.personal || !files.tickets || !files.complaints) {
+        throw new Error('Missing required files');
+      }
+
       await addLog('📥 Reading personal data file...', 800);
-      const personal = await parseFile(files.personal);
+      const personal = await parseFile<PersonalData>(files.personal);
       await addLog(`✓ Successfully parsed ${personal.data.length.toLocaleString()} personal records`, 500);
 
       await addLog('📥 Reading tickets data file...', 800);
-      const tickets = await parseFile(files.tickets);
+      const tickets = await parseFile<TicketData>(files.tickets);
       await addLog(`✓ Successfully parsed ${tickets.data.length.toLocaleString()} ticket records`, 500);
 
       await addLog('📥 Reading complaints data file...', 800);
-      const complaints = await parseFile(files.complaints);
+      const complaints = await parseFile<ComplaintData>(files.complaints);
       await addLog(`✓ Successfully parsed ${complaints.data.length.toLocaleString()} complaint records`, 500);
 
       await addLog('🔍 Beginning data analysis phase...', 1000);
@@ -174,7 +202,7 @@ const TradeRepublicAnalysis = () => {
         const tts = calculateTTS(complaint.CREATED_AT, complaint.SOLVED_AT);
         return {
           total: acc.total + 1,
-          withinSLA: acc.withinSLA + (tts <= 14 ? 1 : 0)
+          withinSLA: acc.withinSLA + ((tts !== null && tts <= 14) ? 1 : 0)
         };
       }, { total: 0, withinSLA: 0 });
 
@@ -231,7 +259,7 @@ const TradeRepublicAnalysis = () => {
       await addLog('📊 Generating final report...', 800);
       await addLog('✅ Results ready for review', 500);
     } catch (error) {
-      await addLog(`❌ Error during analysis: ${error.message}`, 500);
+      await addLog(`❌ Error during analysis: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
       console.error(error);
     } finally {
       setIsAnalyzing(false);
@@ -253,7 +281,7 @@ const TradeRepublicAnalysis = () => {
           <CardContent>
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {['personal', 'tickets', 'complaints'].map((type) => (
+                {(['personal', 'tickets', 'complaints'] as const).map((type) => (
                   <div key={type} className="relative">
                     <label className="block text-sm font-medium mb-2 capitalize">
                       {type} Data CSV
@@ -262,7 +290,7 @@ const TradeRepublicAnalysis = () => {
                       <input
                         type="file"
                         accept=".csv"
-                        onChange={(e) => handleFileUpload(e, type as keyof FileState)}
+                        onChange={(e) => handleFileUpload(e, type)}
                         className="block w-full text-sm file:mr-4 file:py-2 file:px-4 
                           file:rounded-lg file:border-0 file:font-medium
                           file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100
@@ -308,8 +336,10 @@ const TradeRepublicAnalysis = () => {
 
         {/* Terminal-like log display */}
         <Card className="border-none shadow-lg overflow-hidden">
-          <CardHeader className="border-b bg-gray-50 dark:bg-gray-800">
-            <CardTitle className="text-lg font-semibold">Analysis Terminal</CardTitle>
+          <CardHeader className="border-b bg-gradient-to-r from-blue-600 to-blue-500 text-center py-6">
+            <CardTitle className="text-3xl font-bold text-white">
+              Analysis Terminal
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="bg-gray-900 text-green-400 p-6 h-96 overflow-y-auto font-mono text-sm">
