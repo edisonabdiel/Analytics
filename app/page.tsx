@@ -213,80 +213,97 @@ const TradeRepublicAnalysis = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Trade Republic Case Study Analysis</CardTitle>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <Card className="border-none shadow-lg">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+              Trade Republic Case Study Analysis
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Upload your CSV files and analyze the data with our advanced analytics tool
+            </p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Personal Data CSV</label>
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={(e) => handleFileUpload(e, 'personal')}
-                    className="block w-full text-sm border rounded p-2"
-                    disabled={isAnalyzing}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Tickets Data CSV</label>
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={(e) => handleFileUpload(e, 'tickets')}
-                    className="block w-full text-sm border rounded p-2"
-                    disabled={isAnalyzing}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Complaints Data CSV</label>
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={(e) => handleFileUpload(e, 'complaints')}
-                    className="block w-full text-sm border rounded p-2"
-                    disabled={isAnalyzing}
-                  />
-                </div>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {['personal', 'tickets', 'complaints'].map((type) => (
+                  <div key={type} className="relative">
+                    <label className="block text-sm font-medium mb-2 capitalize">
+                      {type} Data CSV
+                    </label>
+                    <div className={`relative group ${files[type] ? 'border-green-500' : ''}`}>
+                      <input
+                        type="file"
+                        accept=".csv"
+                        onChange={(e) => handleFileUpload(e, type)}
+                        className="block w-full text-sm file:mr-4 file:py-2 file:px-4 
+                          file:rounded-lg file:border-0 file:font-medium
+                          file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100
+                          border rounded-lg cursor-pointer
+                          disabled:opacity-50 disabled:cursor-not-allowed
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                          transition-all duration-200"
+                        disabled={isAnalyzing}
+                      />
+                      {files[type] && (
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                          <span className="text-green-500">✓</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
               
               <button
                 onClick={analyzeData}
                 disabled={isAnalyzing || !files.personal || !files.tickets || !files.complaints}
-                className={`w-full py-2 px-4 rounded transition-colors ${
-                  isAnalyzing || !files.personal || !files.tickets || !files.complaints
-                    ? 'bg-gray-300 cursor-not-allowed'
-                    : 'bg-blue-500 hover:bg-blue-600 text-white'
-                }`}
+                className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 
+                  shadow-sm hover:shadow-md
+                  ${isAnalyzing || !files.personal || !files.tickets || !files.complaints
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white'
+                  }`}
               >
-                {isAnalyzing ? '⚡ Running Analysis...' : '🚀 Run Analysis'}
+                {isAnalyzing ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Running Analysis...
+                  </span>
+                ) : '🚀 Run Analysis'}
               </button>
             </div>
           </CardContent>
         </Card>
 
         {/* Terminal-like log display */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Analysis Terminal</CardTitle>
+        <Card className="border-none shadow-lg overflow-hidden">
+          <CardHeader className="border-b bg-gray-50 dark:bg-gray-800">
+            <CardTitle className="text-lg font-semibold">Analysis Terminal</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="bg-black text-green-400 p-4 rounded h-96 overflow-y-auto font-mono text-sm">
-              <div className="border-b border-green-500 mb-2 pb-1">
-                Trade Republic Analysis Terminal v1.0.0
+          <CardContent className="p-0">
+            <div className="bg-gray-900 text-green-400 p-6 h-96 overflow-y-auto font-mono text-sm">
+              <div className="flex items-center space-x-2 border-b border-gray-800 mb-4 pb-2">
+                <div className="flex space-x-1">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                </div>
+                <span className="text-gray-400">Trade Republic Analysis Terminal v1.0.0</span>
               </div>
               {displayedLogs.map((log, index) => (
                 <div 
                   key={index} 
-                  className={`whitespace-pre-wrap mb-1 ${
+                  className={`whitespace-pre-wrap mb-2 opacity-0 animate-fade-in ${
                     log.type === 'error' ? 'text-red-400' :
                     log.type === 'success' ? 'text-green-400' :
                     'text-gray-300'
                   }`}
+                  style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <span className="text-blue-400">[{log.timestamp}]</span> {log.message}
                 </div>
@@ -301,27 +318,34 @@ const TradeRepublicAnalysis = () => {
 
         {/* Results display */}
         {showResults && results && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Analysis Results</CardTitle>
+          <Card className="border-none shadow-lg">
+            <CardHeader className="border-b bg-gradient-to-r from-blue-600 to-blue-500 text-center py-6">
+              <CardTitle className="text-3xl font-bold text-white">
+                Analysis Results
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold text-lg mb-2">Question 1: German Customer TTS in August</h3>
-                  <p className="text-2xl font-bold text-blue-600 mb-2">Answer: {results.q1.answer}</p>
-                  <p className="text-gray-600">{results.q1.explanation}</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold text-lg mb-2">Question 2: Interest Complaints SLA</h3>
-                  <p className="text-2xl font-bold text-blue-600 mb-2">Answer: {results.q2.answer}</p>
-                  <p className="text-gray-600">{results.q2.explanation}</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold text-lg mb-2">Question 3: French Transfer Complaints</h3>
-                  <p className="text-2xl font-bold text-blue-600 mb-2">Answer: {results.q3.answer}</p>
-                  <p className="text-gray-600">{results.q3.explanation}</p>
-                </div>
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                {[
+                  { title: "German Customer TTS in August", result: results.q1 },
+                  { title: "Interest Complaints SLA", result: results.q2 },
+                  { title: "French Transfer Complaints", result: results.q3 }
+                ].map((item, index) => (
+                  <div key={index} 
+                    className="p-6 rounded-xl bg-white dark:bg-gray-800 shadow-sm 
+                      hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-gray-700"
+                  >
+                    <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-gray-100">
+                      Question {index + 1}: {item.title}
+                    </h3>
+                    <p className="text-3xl font-bold text-blue-600 mb-3">
+                      Answer: {item.result.answer}
+                    </p>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {item.result.explanation}
+                    </p>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
