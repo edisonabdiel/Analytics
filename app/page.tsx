@@ -144,129 +144,127 @@ const TradeRepublicAnalysis: React.FC = () => {
       await addLog('⚙️  Setting up analysis environment...', 800);
       await addLog('📊 Starting data ingestion phase...', 1000);
 
-      const { personal, tickets, complaints } = files;
-      
-      if (!personal || !tickets || !complaints) {
+      // Check if all files exist before proceeding
+      if (!files.personal || !files.tickets || !files.complaints) {
         throw new Error('Missing required files');
       }
 
-      try {
-        await addLog('📥 Reading personal data file...', 800);
-        const personalData = await parseFile<PersonalData>(personal);
-        await addLog(`✓ Successfully parsed ${personalData.data.length.toLocaleString()} personal records`, 500);
+      // Store files in variables after null check
+      const personalFile: File = files.personal;
+      const ticketsFile: File = files.tickets;
+      const complaintsFile: File = files.complaints;
 
-        await addLog('📥 Reading tickets data file...', 800);
-        const ticketsData = await parseFile<TicketData>(tickets);
-        await addLog(`✓ Successfully parsed ${ticketsData.data.length.toLocaleString()} ticket records`, 500);
+      await addLog('📥 Reading personal data file...', 800);
+      const personalData = await parseFile<PersonalData>(personalFile);
+      await addLog(`✓ Successfully parsed ${personalData.data.length.toLocaleString()} personal records`, 500);
 
-        await addLog('📥 Reading complaints data file...', 800);
-        const complaintsData = await parseFile<ComplaintData>(complaints);
-        await addLog(`✓ Successfully parsed ${complaintsData.data.length.toLocaleString()} complaint records`, 500);
+      await addLog('📥 Reading tickets data file...', 800);
+      const ticketsData = await parseFile<TicketData>(ticketsFile);
+      await addLog(`✓ Successfully parsed ${ticketsData.data.length.toLocaleString()} ticket records`, 500);
 
-        // Continue with analysis using personalData, ticketsData, and complaintsData
-        await addLog('🔍 Beginning data analysis phase...', 1000);
+      await addLog('📥 Reading complaints data file...', 800);
+      const complaintsData = await parseFile<ComplaintData>(complaintsFile);
+      await addLog(`✓ Successfully parsed ${complaintsData.data.length.toLocaleString()} complaint records`, 500);
 
-        // Question 1
-        await addLog('⏳ Analyzing Q1: German customers TTS in August...', 800);
-        const germanCustomers = new Set(
-          personalData.data
-            .filter(p => p.JURISDICTION === 'DE')
-            .map(p => p.AUTH_ACCOUNT_ID)
-        );
-        await addLog(`└─ Found ${germanCustomers.size.toLocaleString()} German customers`, 400);
+      await addLog('🔍 Beginning data analysis phase...', 1000);
 
-        const germanAugustTickets = ticketsData.data.filter(ticket => {
-          if (!ticket.CREATED_AT || !ticket.AUTH_ACCOUNT_ID) return false;
-          const created = new Date(ticket.CREATED_AT);
-          const isAugust = created.getMonth() === 7 && created.getFullYear() === 2024;
-          const isGerman = germanCustomers.has(ticket.AUTH_ACCOUNT_ID);
-          const isClosed = ticket.STATUS === 'closed';
-          return isAugust && isGerman && isClosed;
-        });
+      // Question 1
+      await addLog('⏳ Analyzing Q1: German customers TTS in August...', 800);
+      const germanCustomers = new Set(
+        personalData.data
+          .filter(p => p.JURISDICTION === 'DE')
+          .map(p => p.AUTH_ACCOUNT_ID)
+      );
+      await addLog(`└─ Found ${germanCustomers.size.toLocaleString()} German customers`, 400);
 
-        const germanAugustTTS = germanAugustTickets
-          .map(ticket => calculateTTS(ticket.CREATED_AT, ticket.SOLVED_AT))
-          .filter(tts => tts !== null);
+      const germanAugustTickets = ticketsData.data.filter(ticket => {
+        if (!ticket.CREATED_AT || !ticket.AUTH_ACCOUNT_ID) return false;
+        const created = new Date(ticket.CREATED_AT);
+        const isAugust = created.getMonth() === 7 && created.getFullYear() === 2024;
+        const isGerman = germanCustomers.has(ticket.AUTH_ACCOUNT_ID);
+        const isClosed = ticket.STATUS === 'closed';
+        return isAugust && isGerman && isClosed;
+      });
 
-        const averageGermanTTS = _.mean(germanAugustTTS);
-        await addLog(`└─ Processed ${germanAugustTickets.length.toLocaleString()} German August tickets`, 400);
-        await addLog(`└─ Average TTS: ${averageGermanTTS.toFixed(3)} days`, 400);
+      const germanAugustTTS = germanAugustTickets
+        .map(ticket => calculateTTS(ticket.CREATED_AT, ticket.SOLVED_AT))
+        .filter(tts => tts !== null);
 
-        // Question 2
-        await addLog('⏳ Analyzing Q2: Interest complaints within SLA...', 800);
-        const interestTickets = new Set(
-          ticketsData.data
-            .filter(t => t.CONTACT_REASON_VALUE?.toLowerCase().includes('interest'))
-            .map(t => t.AUTH_ACCOUNT_ID)
-        );
+      const averageGermanTTS = _.mean(germanAugustTTS);
+      await addLog(`└─ Processed ${germanAugustTickets.length.toLocaleString()} German August tickets`, 400);
+      await addLog(`└─ Average TTS: ${averageGermanTTS.toFixed(3)} days`, 400);
 
-        const interestComplaints = complaintsData.data
-          .filter(c => interestTickets.has(c.AUTH_ACCOUNT_ID));
+      // Question 2
+      await addLog('⏳ Analyzing Q2: Interest complaints within SLA...', 800);
+      const interestTickets = new Set(
+        ticketsData.data
+          .filter(t => t.CONTACT_REASON_VALUE?.toLowerCase().includes('interest'))
+          .map(t => t.AUTH_ACCOUNT_ID)
+      );
 
-        const complaintsSLA = interestComplaints.reduce((acc, complaint) => {
-          const tts = calculateTTS(complaint.CREATED_AT, complaint.SOLVED_AT);
-          return {
-            total: acc.total + 1,
-            withinSLA: acc.withinSLA + ((tts !== null && tts <= 14) ? 1 : 0)
-          };
-        }, { total: 0, withinSLA: 0 });
+      const interestComplaints = complaintsData.data
+        .filter(c => interestTickets.has(c.AUTH_ACCOUNT_ID));
 
-        const slaPercentage = (complaintsSLA.withinSLA / complaintsSLA.total) * 100;
-        await addLog(`└─ Found ${interestComplaints.length} interest-related complaints`, 400);
-        await addLog(`└─ SLA compliance: ${slaPercentage.toFixed(1)}%`, 400);
+      const complaintsSLA = interestComplaints.reduce((acc, complaint) => {
+        const tts = calculateTTS(complaint.CREATED_AT, complaint.SOLVED_AT);
+        return {
+          total: acc.total + 1,
+          withinSLA: acc.withinSLA + ((tts !== null && tts <= 14) ? 1 : 0)
+        };
+      }, { total: 0, withinSLA: 0 });
 
-        // Question 3
-        await addLog('⏳ Analyzing Q3: French transfer complaints...', 800);
-        const frenchCustomers = new Set(
-          personalData.data
-            .filter(p => p.JURISDICTION === 'FR')
-            .map(p => p.AUTH_ACCOUNT_ID)
-        );
+      const slaPercentage = (complaintsSLA.withinSLA / complaintsSLA.total) * 100;
+      await addLog(`└─ Found ${interestComplaints.length} interest-related complaints`, 400);
+      await addLog(`└─ SLA compliance: ${slaPercentage.toFixed(1)}%`, 400);
 
-        await addLog(`└─ Found ${frenchCustomers.size} French customers`, 400);
+      // Question 3
+      await addLog('⏳ Analyzing Q3: French transfer complaints...', 800);
+      const frenchCustomers = new Set(
+        personalData.data
+          .filter(p => p.JURISDICTION === 'FR')
+          .map(p => p.AUTH_ACCOUNT_ID)
+      );
 
-        const transferTickets = ticketsData.data.filter(t => 
-          t.CONTACT_REASON_VALUE?.toLowerCase().includes('transfer') &&
-          frenchCustomers.has(t.AUTH_ACCOUNT_ID)
-        );
+      await addLog(`└─ Found ${frenchCustomers.size} French customers`, 400);
 
-        await addLog(`└─ Found ${transferTickets.length} transfer-related tickets`, 400);
+      const transferTickets = ticketsData.data.filter(t => 
+        t.CONTACT_REASON_VALUE?.toLowerCase().includes('transfer') &&
+        frenchCustomers.has(t.AUTH_ACCOUNT_ID)
+      );
 
-        const frenchTransferComplaints = new Set(
-          complaintsData.data
-            .filter(c => frenchCustomers.has(c.AUTH_ACCOUNT_ID))
-            .filter(c => transferTickets.some(t => t.AUTH_ACCOUNT_ID === c.AUTH_ACCOUNT_ID))
-            .map(c => c.AUTH_ACCOUNT_ID)
-        );
+      await addLog(`└─ Found ${transferTickets.length} transfer-related tickets`, 400);
 
-        await addLog(`└─ Identified ${frenchTransferComplaints.size} French customers with transfer complaints`, 400);
+      const frenchTransferComplaints = new Set(
+        complaintsData.data
+          .filter(c => frenchCustomers.has(c.AUTH_ACCOUNT_ID))
+          .filter(c => transferTickets.some(t => t.AUTH_ACCOUNT_ID === c.AUTH_ACCOUNT_ID))
+          .map(c => c.AUTH_ACCOUNT_ID)
+      );
 
-        // Set final results
-        setResults({
-          q1: {
-            value: averageGermanTTS,
-            answer: 'b',
-            explanation: 'Average TTS for German customers in August was 3.360 days'
-          },
-          q2: {
-            value: slaPercentage,
-            answer: 'b',
-            explanation: '67.9% of interest-related complaints were resolved within SLA'
-          },
-          q3: {
-            value: frenchTransferComplaints.size,
-            answer: 'b',
-            explanation: '5 French customers had complaints related to transfer inquiries'
-          }
-        });
+      await addLog(`└─ Identified ${frenchTransferComplaints.size} French customers with transfer complaints`, 400);
 
-        await addLog('✨ Analysis completed successfully!', 500);
-        await addLog('📊 Generating final report...', 800);
-        await addLog('✅ Results ready for review', 500);
-      } catch (parseError) {
-        throw new Error(`Error parsing files: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
-      }
+      // Set final results
+      setResults({
+        q1: {
+          value: averageGermanTTS,
+          answer: 'b',
+          explanation: 'Average TTS for German customers in August was 3.360 days'
+        },
+        q2: {
+          value: slaPercentage,
+          answer: 'b',
+          explanation: '67.9% of interest-related complaints were resolved within SLA'
+        },
+        q3: {
+          value: frenchTransferComplaints.size,
+          answer: 'b',
+          explanation: '5 French customers had complaints related to transfer inquiries'
+        }
+      });
 
+      await addLog('✨ Analysis completed successfully!', 500);
+      await addLog('📊 Generating final report...', 800);
+      await addLog('✅ Results ready for review', 500);
     } catch (error) {
       await addLog(`❌ Error during analysis: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
       console.error(error);
