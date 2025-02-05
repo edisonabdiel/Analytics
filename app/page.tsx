@@ -144,40 +144,39 @@ const TradeRepublicAnalysis: React.FC = () => {
       await addLog('⚙️  Setting up analysis environment...', 800);
       await addLog('📊 Starting data ingestion phase...', 1000);
 
-      // Check if all files exist before proceeding
-      if (!files.personal || !files.tickets || !files.complaints) {
-        throw new Error('Missing required files');
-      }
-
-      // Store files in variables after null check
-      const personalFile: File = files.personal;
-      const ticketsFile: File = files.tickets;
-      const complaintsFile: File = files.complaints;
-
       await addLog('📥 Reading personal data file...', 800);
-      const personalData = await parseFile<PersonalData>(personalFile);
-      await addLog(`✓ Successfully parsed ${personalData.data.length.toLocaleString()} personal records`, 500);
+      if (!files.personal) {
+        throw new Error('Personal data file is required');
+      }
+      const personal = await parseFile<PersonalData>(files.personal);
+      await addLog(`✓ Successfully parsed ${personal.data.length.toLocaleString()} personal records`, 500);
 
       await addLog('📥 Reading tickets data file...', 800);
-      const ticketsData = await parseFile<TicketData>(ticketsFile);
-      await addLog(`✓ Successfully parsed ${ticketsData.data.length.toLocaleString()} ticket records`, 500);
+      if (!files.tickets) {
+        throw new Error('Tickets data file is required');
+      }
+      const tickets = await parseFile<TicketData>(files.tickets);
+      await addLog(`✓ Successfully parsed ${tickets.data.length.toLocaleString()} ticket records`, 500);
 
       await addLog('📥 Reading complaints data file...', 800);
-      const complaintsData = await parseFile<ComplaintData>(complaintsFile);
-      await addLog(`✓ Successfully parsed ${complaintsData.data.length.toLocaleString()} complaint records`, 500);
+      if (!files.complaints) {
+        throw new Error('Complaints data file is required');
+      }
+      const complaints = await parseFile<ComplaintData>(files.complaints);
+      await addLog(`✓ Successfully parsed ${complaints.data.length.toLocaleString()} complaint records`, 500);
 
       await addLog('🔍 Beginning data analysis phase...', 1000);
 
       // Question 1
       await addLog('⏳ Analyzing Q1: German customers TTS in August...', 800);
       const germanCustomers = new Set(
-        personalData.data
+        personal.data
           .filter(p => p.JURISDICTION === 'DE')
           .map(p => p.AUTH_ACCOUNT_ID)
       );
       await addLog(`└─ Found ${germanCustomers.size.toLocaleString()} German customers`, 400);
 
-      const germanAugustTickets = ticketsData.data.filter(ticket => {
+      const germanAugustTickets = tickets.data.filter(ticket => {
         if (!ticket.CREATED_AT || !ticket.AUTH_ACCOUNT_ID) return false;
         const created = new Date(ticket.CREATED_AT);
         const isAugust = created.getMonth() === 7 && created.getFullYear() === 2024;
@@ -197,12 +196,12 @@ const TradeRepublicAnalysis: React.FC = () => {
       // Question 2
       await addLog('⏳ Analyzing Q2: Interest complaints within SLA...', 800);
       const interestTickets = new Set(
-        ticketsData.data
+        tickets.data
           .filter(t => t.CONTACT_REASON_VALUE?.toLowerCase().includes('interest'))
           .map(t => t.AUTH_ACCOUNT_ID)
       );
 
-      const interestComplaints = complaintsData.data
+      const interestComplaints = complaints.data
         .filter(c => interestTickets.has(c.AUTH_ACCOUNT_ID));
 
       const complaintsSLA = interestComplaints.reduce((acc, complaint) => {
@@ -220,14 +219,14 @@ const TradeRepublicAnalysis: React.FC = () => {
       // Question 3
       await addLog('⏳ Analyzing Q3: French transfer complaints...', 800);
       const frenchCustomers = new Set(
-        personalData.data
+        personal.data
           .filter(p => p.JURISDICTION === 'FR')
           .map(p => p.AUTH_ACCOUNT_ID)
       );
 
       await addLog(`└─ Found ${frenchCustomers.size} French customers`, 400);
 
-      const transferTickets = ticketsData.data.filter(t => 
+      const transferTickets = tickets.data.filter(t => 
         t.CONTACT_REASON_VALUE?.toLowerCase().includes('transfer') &&
         frenchCustomers.has(t.AUTH_ACCOUNT_ID)
       );
@@ -235,7 +234,7 @@ const TradeRepublicAnalysis: React.FC = () => {
       await addLog(`└─ Found ${transferTickets.length} transfer-related tickets`, 400);
 
       const frenchTransferComplaints = new Set(
-        complaintsData.data
+        complaints.data
           .filter(c => frenchCustomers.has(c.AUTH_ACCOUNT_ID))
           .filter(c => transferTickets.some(t => t.AUTH_ACCOUNT_ID === c.AUTH_ACCOUNT_ID))
           .map(c => c.AUTH_ACCOUNT_ID)
