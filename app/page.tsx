@@ -345,11 +345,7 @@ const TradeRepublicAnalysis: React.FC = () => {
 
         {/* Terminal-like log display */}
         <Card className="border-none shadow-lg overflow-hidden">
-          <CardHeader className="border-b bg-gradient-to-r from-blue-600 to-blue-500 text-center py-6">
-            <CardTitle className="text-3xl font-bold text-white">
-              Analysis Terminal
-            </CardTitle>
-          </CardHeader>
+          
           <CardContent className="p-0">
             <div className="bg-gray-900 text-green-400 p-6 h-96 overflow-y-auto font-mono text-sm">
               <div className="flex items-center space-x-2 border-b border-gray-800 mb-4 pb-2">
