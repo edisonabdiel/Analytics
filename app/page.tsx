@@ -67,13 +67,16 @@ const TradeRepublicAnalysis: React.FC = () => {
   useEffect(() => {
     if (logs.length > displayedLogs.length) {
       const timer = setTimeout(() => {
-        setDisplayedLogs(prev => [...prev, logs[prev.length]]);
+        setDisplayedLogs(prev => {
+          const newLogs = [...prev, logs[prev.length]];
+          // Only show results after the final log is displayed
+          if (newLogs.length === logs.length && 
+              logs[logs.length - 1].message === '✅ Results ready for review') {
+            setTimeout(() => setShowResults(true), 1000); // Add 1 second delay after final log
+          }
+          return newLogs;
+        });
       }, Math.random() * 300 + 200);
-      return () => clearTimeout(timer);
-    } else if (logs.length > 0 && logs.length === displayedLogs.length) {
-      const timer = setTimeout(() => {
-        setShowResults(true);
-      }, 500);
       return () => clearTimeout(timer);
     }
   }, [logs, displayedLogs]);
@@ -147,16 +150,21 @@ const TradeRepublicAnalysis: React.FC = () => {
         throw new Error('Missing required files');
       }
 
+      // Now TypeScript knows these files are not null
+      const personalFile = files.personal;
+      const ticketsFile = files.tickets;
+      const complaintsFile = files.complaints;
+
       await addLog('📥 Reading personal data file...', 800);
-      const personal = await parseFile<PersonalData>(files.personal);
+      const personal = await parseFile<PersonalData>(personalFile);
       await addLog(`✓ Successfully parsed ${personal.data.length.toLocaleString()} personal records`, 500);
 
       await addLog('📥 Reading tickets data file...', 800);
-      const tickets = await parseFile<TicketData>(files.tickets);
+      const tickets = await parseFile<TicketData>(ticketsFile);
       await addLog(`✓ Successfully parsed ${tickets.data.length.toLocaleString()} ticket records`, 500);
 
       await addLog('📥 Reading complaints data file...', 800);
-      const complaints = await parseFile<ComplaintData>(files.complaints);
+      const complaints = await parseFile<ComplaintData>(complaintsFile);
       await addLog(`✓ Successfully parsed ${complaints.data.length.toLocaleString()} complaint records`, 500);
 
       await addLog('🔍 Beginning data analysis phase...', 1000);
