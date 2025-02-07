@@ -29,9 +29,29 @@ interface Results {
   q3: AnalysisResult;
 }
 
-interface ParsedData {
-  data: any[];
-  errors: any[];
+interface BaseRecord {
+  AUTH_ACCOUNT_ID: string;
+}
+
+interface PersonalRecord extends BaseRecord {
+  JURISDICTION: string;
+}
+
+interface TicketRecord extends BaseRecord {
+  CREATED_AT: string;
+  SOLVED_AT: string;
+  STATUS: string;
+  CONTACT_REASON_VALUE: string;
+}
+
+interface ComplaintRecord extends BaseRecord {
+  CREATED_AT: string;
+  SOLVED_AT: string;
+}
+
+interface ParsedData<T> {
+  data: T[];
+  errors: Papa.ParseError[];
   meta: {
     delimiter: string;
     linebreak: string;
@@ -95,14 +115,14 @@ const TradeRepublicAnalysis: React.FC = () => {
     return (solved - created) / (1000 * 60 * 60 * 24);
   };
 
-  const parseFile = async (file: File): Promise<ParsedData> => {
+  const parseFile = async <T extends BaseRecord>(file: File): Promise<ParsedData<T>> => {
     const text = await file.text();
     return new Promise((resolve) => {
       Papa.parse(text, {
         header: true,
         dynamicTyping: true,
         skipEmptyLines: true,
-        complete: (results) => resolve(results as ParsedData)
+        complete: (results) => resolve(results as ParsedData<T>)
       });
     });
   };
@@ -122,19 +142,19 @@ const TradeRepublicAnalysis: React.FC = () => {
         throw new Error('All files are required for analysis');
       }
 
-      const personal = await parseFile(files.personal);
-      const tickets = await parseFile(files.tickets);
-      const complaints = await parseFile(files.complaints);
+      const personal = await parseFile<PersonalRecord>(files.personal);
+      const tickets = await parseFile<TicketRecord>(files.tickets);
+      const complaints = await parseFile<ComplaintRecord>(files.complaints);
 
       await addLog('🔍 Beginning data analysis phase...', 1000);
 
       const germanCustomers = new Set(
         personal.data
-          .filter((p: any) => p.JURISDICTION === 'DE')
-          .map((p: any) => p.AUTH_ACCOUNT_ID)
+          .filter((p) => p.JURISDICTION === 'DE')
+          .map((p) => p.AUTH_ACCOUNT_ID)
       );
 
-      const germanAugustTickets = tickets.data.filter((ticket: any) => {
+      const germanAugustTickets = tickets.data.filter((ticket) => {
         if (!ticket.CREATED_AT || !ticket.AUTH_ACCOUNT_ID) return false;
         const created = new Date(ticket.CREATED_AT);
         const isAugust = created.getMonth() === 7 && created.getFullYear() === 2024;
@@ -144,10 +164,17 @@ const TradeRepublicAnalysis: React.FC = () => {
       });
 
       const germanTTS = germanAugustTickets
-        .map((ticket: any) => calculateTTS(ticket.CREATED_AT, ticket.SOLVED_AT))
+        .map((ticket) => calculateTTS(ticket.CREATED_AT, ticket.SOLVED_AT))
         .filter((tts: number | null): tts is number => tts !== null);
 
       const averageGermanTTS = _.mean(germanTTS);
+
+      const interestComplaints = complaints.data.filter(complaint => 
+        tickets.data.some(ticket => 
+          ticket.AUTH_ACCOUNT_ID === complaint.AUTH_ACCOUNT_ID && 
+          ticket.CONTACT_REASON_VALUE?.toLowerCase().includes('interest')
+        )
+      );
 
       setResults({
         q1: {
@@ -158,7 +185,7 @@ const TradeRepublicAnalysis: React.FC = () => {
         q2: {
           value: null,
           answer: 'e',
-          explanation: 'Not possible to deduce from available data due to missing complaint-ticket relationships'
+          explanation: `Found ${interestComplaints.length} interest-related complaints`
         },
         q3: {
           value: null,
